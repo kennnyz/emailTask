@@ -6,13 +6,10 @@ import (
 )
 
 type Config struct {
-	DB             *DBConfig
-	ServerAddr     string `json:"server_addr"`
-	TimeToLiveLink string `json:"time_to_live_link"`
-}
-
-type DBConfig struct {
-	Dsn string
+	DbDsn              string `json:"db_dsn"`
+	ServerAddr         string `json:"server_address"`
+	TimeToLiveLink     string `json:"time_to_live_link"`
+	UserEmailFilesPath string `json:"users_email_files_path"`
 }
 
 type ServerConfig struct {
@@ -27,12 +24,7 @@ func ReadConfig(configPath string) (*Config, error) {
 	defer file.Close()
 
 	var cfg Config
-	// decode json file ServerAddr and StorageType fields
 	err = json.NewDecoder(file).Decode(&cfg)
-
-	db := &DBConfig{}
-	cfg.DB = db
-	cfg.DB.Dsn = os.Getenv("DB_DSN")
 
 	return &cfg, nil
 }

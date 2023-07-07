@@ -1,9 +1,12 @@
 package repository
 
-import "database/sql"
+import (
+	"database/sql"
+	"mailService/internal/service"
+)
 
 type Repository struct {
-	Email Email
+	Email service.EmailRepository
 }
 
 func NewRepository(db *sql.DB) *Repository {

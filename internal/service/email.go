@@ -4,25 +4,25 @@ import (
 	"archive/zip"
 	"bytes"
 	"io"
-	"log"
 	"mailService/internal/models"
-	"mailService/internal/repository"
 	"os"
 	"path/filepath"
 )
 
-type Email interface {
+type EmailRepository interface {
 	AddUser(mail string) (models.Email, error)
-	CheckUserByKeyword(keyword string) ([]byte, error) // check if user exists
+	CheckUserByKeyword(keyword string) (models.Email, error) // check if user exists
 }
 
 type EmailService struct {
-	repo repository.Email
+	repo         EmailRepository
+	usersTmpPath string
 }
 
-func NewEmailService(repo repository.Email) *EmailService {
+func NewEmailService(repo EmailRepository, usersTmpPath string) *EmailService {
 	return &EmailService{
-		repo: repo,
+		repo:         repo,
+		usersTmpPath: usersTmpPath,
 	}
 }
 
@@ -31,27 +31,11 @@ func (s *EmailService) AddUser(mail string) (models.Email, error) {
 	if err != nil {
 		return models.Email{}, err
 	}
-	pathFile := "./tmp/" + model.Email
-	err = os.MkdirAll(pathFile, 0755)
-	if err != nil {
-		// TODO LOGG
-		return models.Email{}, err
-	}
 
-	// Создаем файлы внутри папки
-	incomingFile, err := os.Create(filepath.Join(pathFile, "Incoming.txt"))
+	err = s.addUserMailFolder(model)
 	if err != nil {
-		// TODO LOGG
 		return models.Email{}, err
 	}
-	defer incomingFile.Close()
-
-	outgoingFile, err := os.Create(filepath.Join(pathFile, "Outgoing.txt"))
-	if err != nil {
-		// TODO LOGG
-		return models.Email{}, err
-	}
-	defer outgoingFile.Close()
 
 	return model, nil
 }
@@ -59,16 +43,18 @@ func (s *EmailService) AddUser(mail string) (models.Email, error) {
 func (s *EmailService) CheckUserByKeyword(keyword string) ([]byte, error) {
 	model, err := s.repo.CheckUserByKeyword(keyword)
 	if err != nil {
-		// TODO logg
 		return nil, err
 	}
 
-	// Путь к исходной папке
-	sourceDir := "./tmp/" + model.Email // TODO получать путь из json-конфига
+	return s.getUserZip(model)
+}
+
+func (s *EmailService) getUserZip(model models.Email) ([]byte, error) {
+	sourceDir := s.usersTmpPath + model.Email
 	buf := new(bytes.Buffer)
 	zipWriter := zip.NewWriter(buf)
 
-	err = filepath.Walk(sourceDir, func(path string, info os.FileInfo, err error) error {
+	err := filepath.Walk(sourceDir, func(path string, info os.FileInfo, err error) error {
 		if err != nil {
 			return err
 		}
@@ -95,6 +81,7 @@ func (s *EmailService) CheckUserByKeyword(keyword string) ([]byte, error) {
 		if err != nil {
 			return err
 		}
+
 		defer file.Close()
 
 		// Копируем содержимое файла в zip-файл
@@ -114,29 +101,28 @@ func (s *EmailService) CheckUserByKeyword(keyword string) ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
-	log.Println("success")
 
 	return buf.Bytes(), nil
 }
 
-// copyFile копирует файл src в dest.
-func copyFile(src, dest string) error {
-	srcFile, err := os.Open(src)
+func (s *EmailService) addUserMailFolder(model models.Email) error {
+	pathFile := s.usersTmpPath + model.Email
+	err := os.MkdirAll(pathFile, 0755)
 	if err != nil {
 		return err
 	}
-	defer srcFile.Close()
 
-	destFile, err := os.Create(dest)
+	incomingFile, err := os.Create(filepath.Join(pathFile, "Incoming.txt"))
 	if err != nil {
 		return err
 	}
-	defer destFile.Close()
+	defer incomingFile.Close()
 
-	_, err = io.Copy(destFile, srcFile)
+	outgoingFile, err := os.Create(filepath.Join(pathFile, "Outgoing.txt"))
 	if err != nil {
 		return err
 	}
+	defer outgoingFile.Close()
 
 	return nil
 }
