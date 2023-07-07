@@ -1,6 +1,7 @@
 package delivery
 
 import (
+	"github.com/sirupsen/logrus"
 	"log"
 	"mailService/internal/service"
 	"net/http"
@@ -9,15 +10,16 @@ import (
 type Handler struct {
 	// access to business logic
 	service *service.Service
+	logger  *logrus.Logger
 }
 
 func NewHandler(service *service.Service) *Handler {
+	logger := logrus.New()
 	return &Handler{
 		service: service,
+		logger:  logger,
 	}
 }
-
-
 
 func (h *Handler) Init() http.Handler {
 	mux := http.NewServeMux()
@@ -41,16 +43,15 @@ func (h *Handler) addUserMail(w http.ResponseWriter, r *http.Request) {
 
 	ps, err := h.service.EmailService.AddUser(username)
 	if err != nil {
-		// TODO use logging
+		h.logger.Error(err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
-		log.Println(err)
 		return
 	}
 
 	log.Println(ps)
 	_, err = w.Write([]byte(ps.UniqueCode))
 	if err != nil {
-		// TODO USE logger
+		h.logger.Error(err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
@@ -69,7 +70,7 @@ func (h *Handler) returnZIP(w http.ResponseWriter, r *http.Request) {
 
 	b, err := h.service.EmailService.CheckUserByKeyword(key)
 	if err != nil {
-		log.Println(err)
+		h.logger.Error(err)
 		http.Error(w, err.Error(), 200)
 		return
 	}

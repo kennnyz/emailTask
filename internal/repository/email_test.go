@@ -8,7 +8,7 @@ import (
 )
 
 func TestEmailRepo_AddUser(t *testing.T) {
-	db, err := postgres.NewClient("host=localhost port=5432 user=postgres password=password dbname=email_users sslmode=disable timezone=UTC connect_timeout=5")
+	db, err := postgres.NewClient("host=localhost port=5432 user=postgres password=password dbname=mails sslmode=disable timezone=UTC connect_timeout=5")
 	if err != nil {
 		log.Println(err)
 		return
@@ -22,12 +22,12 @@ func TestEmailRepo_AddUser(t *testing.T) {
 		//return
 	}
 
-	_, err = repo.CheckUserByKeyword("497bd685-a4a7-4da6-8926-a71ae956d5b0")
-	if err != nil {
-		log.Println(err)
-	} else {
-		fmt.Println("497bd685-a4a7-4da6-8926-a71ae956d5b0")
-	}
+	//_, err = repo.CheckUserByKeyword("497bd685-a4a7-4da6-8926-a71ae956d5b0")
+	//if err != nil {
+	//	log.Println(err)
+	//} else {
+	//	fmt.Println("497bd685-a4a7-4da6-8926-a71ae956d5b0")
+	//}
 
 	fmt.Print(r)
 

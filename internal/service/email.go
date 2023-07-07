@@ -31,8 +31,6 @@ func (s *EmailService) AddUser(mail string) (models.Email, error) {
 	if err != nil {
 		return models.Email{}, err
 	}
-	// создаем папку с названием model.Email c файлами внутри Incoming, Out-coming и pdf файлом
-	// Создаем папку с названием model.Email
 	pathFile := "./tmp/" + model.Email
 	err = os.MkdirAll(pathFile, 0755)
 	if err != nil {
@@ -54,14 +52,6 @@ func (s *EmailService) AddUser(mail string) (models.Email, error) {
 		return models.Email{}, err
 	}
 	defer outgoingFile.Close()
-
-	// Копируем PDF-файл
-	//srcFile := "./cmd/file.pdf" // TODO took from json config
-	//destFile := filepath.Join(pathFile, "file.pdf")
-	//err = copyFile(srcFile, destFile)
-	//if err != nil {
-	//	return models.Email{}, err
-	//}
 
 	return model, nil
 }

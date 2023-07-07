@@ -11,7 +11,7 @@ import (
 )
 
 func TestHandler_Init(t *testing.T) {
-	db, err := postgres.NewClient("host=localhost port=5432 user=postgres password=password dbname=email_users sslmode=disable timezone=UTC connect_timeout=5")
+	db, err := postgres.NewClient("host=localhost port=5432 user=postgres password=password dbname=mails sslmode=disable timezone=UTC connect_timeout=5")
 	if err != nil {
 		log.Println(err)
 		return
