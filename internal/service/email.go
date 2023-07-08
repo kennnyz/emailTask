@@ -125,7 +125,7 @@ func (s *EmailService) getUserZip(model models.Email) (models.Zip, error) {
 
 	return models.Zip{
 		Body: buf.Bytes(),
-		Name: model.Email,
+		Name: model.Email + ".zip",
 	}, nil
 }
 

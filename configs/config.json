@@ -1,6 +1,6 @@
 {
-  "time_to_live_link" : 1,
+  "time_to_live_link" : 3,
   "server_address" : ":8080",
-  "db_dsn": "host=localhost port=5432 user=postgres password=password dbname=user_mails sslmode=disable timezone=UTC connect_timeout=5",
+  "db_dsn": "host=db port=5432 user=postgres password=password dbname=user_emails sslmode=disable timezone=UTC connect_timeout=5",
   "users_email_files_path": "./tmp/"
 }
