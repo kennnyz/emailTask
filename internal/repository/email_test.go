@@ -22,7 +22,7 @@ func TestEmailRepo_AddUser(t *testing.T) {
 		//return
 	}
 
-	//_, err = repo.CheckUserByKeyword("497bd685-a4a7-4da6-8926-a71ae956d5b0")
+	//_, err = repo.GetUserMailZip("497bd685-a4a7-4da6-8926-a71ae956d5b0")
 	//if err != nil {
 	//	log.Println(err)
 	//} else {

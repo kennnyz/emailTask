@@ -8,12 +8,8 @@ import (
 type Config struct {
 	DbDsn              string `json:"db_dsn"`
 	ServerAddr         string `json:"server_address"`
-	TimeToLiveLink     string `json:"time_to_live_link"`
+	TimeToLiveLink     int    `json:"time_to_live_link"`
 	UserEmailFilesPath string `json:"users_email_files_path"`
-}
-
-type ServerConfig struct {
-	serverAddr string
 }
 
 func ReadConfig(configPath string) (*Config, error) {

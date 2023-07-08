@@ -9,7 +9,7 @@ import (
 
 type EmailService interface {
 	AddUser(mail string) (models.Email, error)
-	CheckUserByKeyword(keyword string) ([]byte, error) // check if user exists
+	GetUserMailZip(keyword string) (models.Zip, error) // check if user exists
 }
 
 type Handler struct {
@@ -29,9 +29,8 @@ func NewHandler(userEmailService EmailService) *Handler {
 func (h *Handler) Init() http.Handler {
 	mux := http.NewServeMux()
 
-	mux.HandleFunc("/add-user-mail", h.addUserMail)
-	mux.HandleFunc("/get-user-zip", h.returnUserEmailZip)
-
+	mux.Handle("/add-user-mail", staticAuthMiddleware(http.HandlerFunc(h.addUserMail)))
+	mux.Handle("/get-user-zip", staticAuthMiddleware(http.HandlerFunc(h.returnUserEmailZip)))
 	return mux
 }
 
@@ -73,13 +72,15 @@ func (h *Handler) returnUserEmailZip(w http.ResponseWriter, r *http.Request) {
 
 	key := r.URL.Query().Get("key")
 
-	b, err := h.userEmailService.CheckUserByKeyword(key)
+	b, err := h.userEmailService.GetUserMailZip(key)
 	if err != nil {
 		h.logger.Error(err)
 		http.Error(w, err.Error(), 200)
 		return
 	}
 
+	// set file name
+	w.Header().Set("Content-Disposition", "attachment; filename="+b.Name)
 	w.Header().Set("Content-Type", "application/zip")
-	w.Write(b)
+	w.Write(b.Body)
 }

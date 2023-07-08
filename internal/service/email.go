@@ -7,22 +7,27 @@ import (
 	"mailService/internal/models"
 	"os"
 	"path/filepath"
+	"time"
 )
 
 type EmailRepository interface {
 	AddUser(mail string) (models.Email, error)
 	CheckUserByKeyword(keyword string) (models.Email, error) // check if user exists
+	DeleteUsersByTTL(ttl int) error
+	DeleteUserByKeyword(keyword string) error
 }
 
 type EmailService struct {
 	repo         EmailRepository
 	usersTmpPath string
+	userMailTTl  int
 }
 
-func NewEmailService(repo EmailRepository, usersTmpPath string) *EmailService {
+func NewEmailService(repo EmailRepository, usersTmpPath string, ttl int) *EmailService {
 	return &EmailService{
 		repo:         repo,
 		usersTmpPath: usersTmpPath,
+		userMailTTl:  ttl,
 	}
 }
 
@@ -40,16 +45,32 @@ func (s *EmailService) AddUser(mail string) (models.Email, error) {
 	return model, nil
 }
 
-func (s *EmailService) CheckUserByKeyword(keyword string) ([]byte, error) {
+func (s *EmailService) GetUserMailZip(keyword string) (models.Zip, error) {
 	model, err := s.repo.CheckUserByKeyword(keyword)
 	if err != nil {
-		return nil, err
+		return models.Zip{}, err
 	}
 
+	expirationTime := model.CreatedAt.Add(time.Duration(s.userMailTTl) * time.Minute)
+	if time.Now().After(expirationTime) {
+		err := s.deleteUserByKeyword(keyword)
+		if err != nil {
+			return models.Zip{}, err
+		}
+		return models.Zip{}, models.NotFoundUserErr
+	}
 	return s.getUserZip(model)
 }
 
-func (s *EmailService) getUserZip(model models.Email) ([]byte, error) {
+func (s *EmailService) DeleteUsersByTTL() error {
+	return s.repo.DeleteUsersByTTL(s.userMailTTl)
+}
+
+func (s *EmailService) deleteUserByKeyword(keyword string) error {
+	return s.repo.DeleteUserByKeyword(keyword)
+}
+
+func (s *EmailService) getUserZip(model models.Email) (models.Zip, error) {
 	sourceDir := s.usersTmpPath + model.Email
 	buf := new(bytes.Buffer)
 	zipWriter := zip.NewWriter(buf)
@@ -94,15 +115,18 @@ func (s *EmailService) getUserZip(model models.Email) ([]byte, error) {
 	})
 
 	if err != nil {
-		return nil, err
+		return models.Zip{}, err
 	}
 
 	err = zipWriter.Close()
 	if err != nil {
-		return nil, err
+		return models.Zip{}, err
 	}
 
-	return buf.Bytes(), nil
+	return models.Zip{
+		Body: buf.Bytes(),
+		Name: model.Email,
+	}, nil
 }
 
 func (s *EmailService) addUserMailFolder(model models.Email) error {
@@ -123,6 +147,24 @@ func (s *EmailService) addUserMailFolder(model models.Email) error {
 		return err
 	}
 	defer outgoingFile.Close()
+
+	pdfFile, err := os.Open("./attachments/readme.pdf")
+	if err != nil {
+		return err
+	}
+
+	defer pdfFile.Close()
+	pdfDestination := filepath.Join(pathFile, "readme.pdf")
+	pdfDestinationFile, err := os.Create(pdfDestination)
+	if err != nil {
+		return err
+	}
+	defer pdfDestinationFile.Close()
+
+	_, err = io.Copy(pdfDestinationFile, pdfFile)
+	if err != nil {
+		return err
+	}
 
 	return nil
 }

@@ -8,6 +8,7 @@ import (
 	server2 "mailService/internal/server"
 	service2 "mailService/internal/service"
 	"mailService/pkg/database/postgres"
+	"time"
 )
 
 func Run(configPath string) {
@@ -20,7 +21,21 @@ func Run(configPath string) {
 
 	repo := repository.NewEmailRepo(db)
 
-	emailService := service2.NewEmailService(repo, cfg.UserEmailFilesPath)
+	// delete users by ttl
+	emailService := service2.NewEmailService(repo, cfg.UserEmailFilesPath, cfg.TimeToLiveLink)
+	ticker := time.NewTimer(time.Minute * time.Duration(cfg.TimeToLiveLink))
+	go func() {
+		for {
+			select {
+			case <-ticker.C:
+				err := emailService.DeleteUsersByTTL()
+				if err != nil {
+					logrus.Error(err)
+				}
+				ticker.Reset(time.Minute * time.Duration(cfg.TimeToLiveLink))
+			}
+		}
+	}()
 
 	handler := delivery.NewHandler(emailService)
 
